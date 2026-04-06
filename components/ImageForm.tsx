@@ -30,6 +30,37 @@ export default function ImageForm({ initialData }: Props) {
   const [celebrityRecognition, setCelebrityRecognition] = useState(
     initialData?.celebrity_recognition ?? ""
   )
+  const [uploading, setUploading] = useState(false)
+
+  // 🔥 FILE UPLOAD FUNCTION
+  const handleFileUpload = async (file: File) => {
+    try {
+      setUploading(true)
+
+      const filePath = `${Date.now()}-${file.name}`
+
+      const { error } = await supabase.storage
+        .from("images") // ⚠️ bucket name (change if needed)
+        .upload(filePath, file)
+
+      if (error) {
+        console.error(error)
+        alert("Upload failed")
+        return
+      }
+
+      const { data } = supabase.storage
+        .from("images")
+        .getPublicUrl(filePath)
+
+      setUrl(data.publicUrl)
+    } catch (err) {
+      console.error(err)
+      alert("Upload error")
+    } finally {
+      setUploading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,11 +85,35 @@ export default function ImageForm({ initialData }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+    >
+      {/* 🔥 FILE INPUT */}
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">Image URL</label>
+        <label className="mb-1 block text-sm font-medium text-slate-700">
+          Upload Image
+        </label>
         <input
-          className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+          type="file"
+          onChange={(e) => {
+            if (e.target.files?.[0]) {
+              handleFileUpload(e.target.files[0])
+            }
+          }}
+        />
+        {uploading && (
+          <p className="text-xs text-slate-500 mt-1">Uploading...</p>
+        )}
+      </div>
+
+      {/* URL AUTO FILLED */}
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700">
+          Image URL
+        </label>
+        <input
+          className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           required
@@ -66,9 +121,11 @@ export default function ImageForm({ initialData }: Props) {
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">Profile ID</label>
+        <label className="mb-1 block text-sm font-medium text-slate-700">
+          Profile ID
+        </label>
         <input
-          className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+          className="w-full rounded-md border border-slate-300 px-3 py-2"
           value={profileId}
           onChange={(e) => setProfileId(e.target.value)}
           required
@@ -76,34 +133,40 @@ export default function ImageForm({ initialData }: Props) {
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">Additional Context</label>
+        <label className="mb-1 block text-sm font-medium text-slate-700">
+          Additional Context
+        </label>
         <textarea
-          className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+          className="w-full rounded-md border border-slate-300 px-3 py-2"
           value={additionalContext}
           onChange={(e) => setAdditionalContext(e.target.value)}
         />
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">Image Description</label>
+        <label className="mb-1 block text-sm font-medium text-slate-700">
+          Image Description
+        </label>
         <textarea
-          className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+          className="w-full rounded-md border border-slate-300 px-3 py-2"
           value={imageDescription}
           onChange={(e) => setImageDescription(e.target.value)}
         />
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700">Celebrity Recognition</label>
+        <label className="mb-1 block text-sm font-medium text-slate-700">
+          Celebrity Recognition
+        </label>
         <textarea
-          className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+          className="w-full rounded-md border border-slate-300 px-3 py-2"
           value={celebrityRecognition}
           onChange={(e) => setCelebrityRecognition(e.target.value)}
         />
       </div>
 
       <div className="flex gap-6">
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+        <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
             checked={isCommonUse}
@@ -112,7 +175,7 @@ export default function ImageForm({ initialData }: Props) {
           Common Use
         </label>
 
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+        <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
             checked={isPublic}
@@ -122,7 +185,7 @@ export default function ImageForm({ initialData }: Props) {
         </label>
       </div>
 
-      <button className="rounded-lg bg-slate-800 px-4 py-2 font-medium text-white hover:bg-slate-900">
+      <button className="rounded-lg bg-slate-800 px-4 py-2 text-white">
         {initialData?.id ? "Update Image" : "Create Image"}
       </button>
     </form>
