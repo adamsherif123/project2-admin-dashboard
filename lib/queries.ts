@@ -105,7 +105,9 @@ export async function getCaptions() {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("captions")
-    .select("*")
+    .select(
+      "id, created_datetime_utc, modified_datetime_utc, content, is_public, profile_id, image_id, humor_flavor_id, is_featured, caption_request_id, like_count, llm_prompt_chain_id"
+    )
     .order("created_datetime_utc", { ascending: false })
     .limit(200)
 
@@ -147,6 +149,33 @@ export async function getRecentImages() {
   }
 
   return data
+}
+
+export async function getCaptionRatingStats() {
+  const supabase = await createClient()
+  const { data, error } = await supabase.from("captions").select("like_count")
+
+  if (error) {
+    console.error('Supabase error in table "captions":', error)
+    throw new Error("Failed to read table: captions")
+  }
+
+  const captions = data ?? []
+  const totalRatings = captions.reduce(
+    (sum, caption) => sum + (caption.like_count ?? 0),
+    0
+  )
+  const ratedCaptions = captions.filter(
+    (caption) => (caption.like_count ?? 0) > 0
+  ).length
+  const averageLikesPerCaption =
+    captions.length > 0 ? Number((totalRatings / captions.length).toFixed(2)) : 0
+
+  return {
+    totalRatings,
+    ratedCaptions,
+    averageLikesPerCaption,
+  }
 }
 
 // =====================

@@ -1,10 +1,18 @@
 import StatCard from "@/components/StatCard"
-import { getDashboardStats, getMostLikedCaptions, getRecentImages } from "@/lib/queries"
+import {
+  getCaptionRatingStats,
+  getDashboardStats,
+  getMostLikedCaptions,
+  getRecentImages,
+} from "@/lib/queries"
 
 export default async function AdminDashboardPage() {
-  const stats = await getDashboardStats()
-  const topCaptions = await getMostLikedCaptions()
-  const recentImages = await getRecentImages()
+  const [stats, ratingStats, topCaptions, recentImages] = await Promise.all([
+    getDashboardStats(),
+    getCaptionRatingStats(),
+    getMostLikedCaptions(),
+    getRecentImages(),
+  ])
 
   return (
     <div className="space-y-6">
@@ -15,13 +23,19 @@ export default async function AdminDashboardPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-9">
         <StatCard title="Profiles" value={stats.totalProfiles} />
         <StatCard title="Images" value={stats.totalImages} />
         <StatCard title="Captions" value={stats.totalCaptions} />
         <StatCard title="Public Images" value={stats.publicImages} />
         <StatCard title="Public Captions" value={stats.publicCaptions} />
         <StatCard title="Featured Captions" value={stats.featuredCaptions} />
+        <StatCard title="Total Ratings" value={ratingStats.totalRatings} />
+        <StatCard title="Rated Captions" value={ratingStats.ratedCaptions} />
+        <StatCard
+          title="Avg Rating / Caption"
+          value={ratingStats.averageLikesPerCaption}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
